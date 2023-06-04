@@ -1,3 +1,4 @@
+import Axios from 'axios';
 import { useState } from 'react';
 
 import ImageUploader from 'react-images-upload';
@@ -8,10 +9,10 @@ const UploadComponent = (props) => {
   return (
     <form>
       <label>
-        File upload URL:
+        File upload bucket URL:
         <input
           id='urlInput'
-          type='text'
+          type='url'
           onChange={props.onUrlChange}
           value={props.url}
         />
@@ -33,11 +34,11 @@ const UploadComponent = (props) => {
 
 const App = () => {
   const [progress, setProgress] = useState('getUpload');
-  const [url, setImageUrl] = useState(undefined);
+  const [url, setImageURL] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
   const onUrlChange = (e) => {
-    setImageUrl(e.target.value);
+    setImageURL(e.target.value);
   };
 
   const onImage = async (failedImages, successImages) => {
@@ -51,6 +52,14 @@ const App = () => {
     setProgress('uploading');
     try {
       console.log('successImages', successImages);
+      const parts = successImages[0].split(';');
+      const mime = parts[0].split(':')[1];
+      const name = parts[1].split('=')[1];
+      const data = parts[2];
+      const res = await Axios.post(url, { mime, name, image: data });
+
+      setImageURL(res.data.imageURL);
+      setProgress('uploaded');
     } catch (error) {
       console.log('error in upload', error);
       setErrorMessage(error.message);
@@ -73,10 +82,7 @@ const App = () => {
       case 'uploaded':
         return <img src={url} alt='uploaded image' />;
       case 'uploadError':
-        <>
-          <div>Error message = {errorMessage}</div>
-          <div>Please upload an image</div>
-        </>;
+        return <div>Error message: {errorMessage}</div>;
     }
   };
 
